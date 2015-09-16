@@ -7,10 +7,9 @@ import(
   "os"
   "io"
   "io/ioutil"
-  "strings"
-  "strconv"
   "../arch"
   "../file"
+  "../utils"
 )
 
 var client = &http.Client{}
@@ -67,7 +66,15 @@ func GetNodeJS(root string, v string, a string) bool {
       fmt.Println("Node.js v"+v+" is only available in 32-bit.")
       return false
     }
-    url = "http://nodejs.org/dist/v"+v+"/x64/node.exe"
+    
+    major, _, _ := utils.ExplodeVersion(v)
+    if major >= 4 {
+      url = "http://nodejs.org/dist/v"+v+"/win-x64/node.exe"
+    } else {
+      url = "http://nodejs.org/dist/v"+v+"/x64/node.exe"
+    }
+    
+    
   }
   fileName := root+"\\v"+v+"\\node"+a+".exe"
 
@@ -132,17 +139,29 @@ func IsNode64bitAvailable(v string) bool {
   }
 
   // Anything below version 8 doesn't have a 64 bit version
-  vers := strings.Fields(strings.Replace(v,"."," ",-1))
-  main, _ := strconv.ParseInt(vers[0],0,0)
-  minor, _ := strconv.ParseInt(vers[1],0,0)
-  if main == 0 && minor < 8 {
+  major, minor, _  := utils.ExplodeVersion(v)
+  if major == 0 && minor < 8 {
     return false
   }
 
   // Check online to see if a 64 bit version exists
+  
+  if major >= 4 {
+    res, err := client.Head("http://nodejs.org/dist/v"+v+"/win-x64/node.exe")
+    if err != nil {
+      return false
+    }
+    return res.StatusCode == 200 
+  }
+  
   res, err := client.Head("http://nodejs.org/dist/v"+v+"/x64/node.exe")
   if err != nil {
     return false
   }
+  
+  
   return res.StatusCode == 200
+  
+  
+  
 }

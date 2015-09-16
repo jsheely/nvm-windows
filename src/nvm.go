@@ -14,6 +14,7 @@ import (
   "./nvm/arch"
   "./nvm/file"
   "./nvm/node"
+  "./nvm/utils"
 //  "./ansi"
 )
 
@@ -120,12 +121,19 @@ func update() {
 }
 
 func CheckVersionExceedsLatest(version string) bool{
-    content := web.GetRemoteTextFile("http://nodejs.org/dist/latest/SHASUMS.txt")
+  major, _, _ := utils.ExplodeVersion(version)
+  content := ""  
+  if(major >= 4){
+    content = web.GetRemoteTextFile("http://nodejs.org/dist/latest/SHASUMS256.txt")
+  }else {
+    content = web.GetRemoteTextFile("http://nodejs.org/dist/latest/SHASUMS.txt")
+  }
+    
     re := regexp.MustCompile("node-v(.+)+msi")
     reg := regexp.MustCompile("node-v|-x.+")
-	latest := reg.ReplaceAllString(re.FindString(content),"")
-	
-	if version <= latest {
+    latest := reg.ReplaceAllString(re.FindString(content),"")
+
+	if version > latest {
 		return false
 	} else {
 		return true
